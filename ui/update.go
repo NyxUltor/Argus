@@ -138,25 +138,51 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+			var output string
+
 			if isBuiltin {
-				var output string
-				if cmdClean == "sudo" {
+				if cmdClean == "sudo" { // Just in case you did put it in builtins
 					quotes := []string{
 						"Who decided that?",
 						"That level of genjutsu doesn't work on me.",
 						"Since when did you fall under the illusion that you could command me?",
 					}
 					output = quotes[rng.Intn(len(quotes))]
-				} else {
-					output = getCommandOutput(cmdClean)
+					m.History = append(m.History, HistoryItem{
+						Command: cmdText,
+						Output:  output,
+					})
+					return m, nil
 				}
+
+				output = getCommandOutput(cmdClean)
 				m.History = append(m.History, HistoryItem{
 					Command: cmdText,
 					Output:  output,
 				})
 				return m, nil
-			}
 
+			} else {
+				// CATCH ALL UNRECOGNIZED COMMANDS HERE
+
+				// If they try to run a local system command with sudo, block it with style
+				if cmdClean == "sudo" || strings.HasPrefix(cmdText, "sudo ") {
+					quotes := []string{
+						"Who decided that?",
+						"That level of genjutsu doesn't work on me.",
+						"Since when did you fall under the illusion that you could command me?",
+					}
+					output = quotes[rng.Intn(len(quotes))]
+					m.History = append(m.History, HistoryItem{
+						Command: cmdText,
+						Output:  output,
+					})
+					return m, nil
+				}
+
+				// Otherwise, hand it off to your exec files (local runs it, ssh says command not found)
+				return handleFallbackCommand(m, cmdText)
+			}
 		default:
 			if utf8.RuneCountInString(msg.String()) == 1 {
 				runes := []rune(m.InputBuffer)
