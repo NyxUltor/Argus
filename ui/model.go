@@ -1,5 +1,7 @@
 package ui
 
+import "os/user"
+
 type HistoryItem struct {
 	Command string
 	Output  string
@@ -21,24 +23,35 @@ type Model struct {
 	Message        string
 	TerminalWidth  int
 	TerminalHeight int
+	SystemUsername string
 
 	History []HistoryItem
 }
 
 func InitialModel() Model {
+	// 1. Create a default fallback name
+	username := "mysterious_user"
+
+	// 2. Try to get the real OS username
+	if sysUser, err := user.Current(); err == nil {
+		username = sysUser.Username
+	}
+
+	// 3. Return your model using that username variable
 	return Model{
-		InputBuffer:   "",
-		CursorPos:     0,
-		Suggestions:   []string{},
-		SelectedIndex: -1,
-		ShowDropdown:  false,
-		ActiveView:    "prompt",
-		SelectedProj:  "",
-		Message:       "",
+		SystemUsername: username, // <-- Works perfectly every time now!
+		InputBuffer:    "",
+		CursorPos:      0,
+		Suggestions:    []string{},
+		SelectedIndex:  -1,
+		ShowDropdown:   false,
+		ActiveView:     "prompt",
+		SelectedProj:   "",
+		Message:        "",
 		History: []HistoryItem{
 			{
 				Command: "system --boot",
-				Output:  "Argus Terminal Controller initialized.\nType 'help' to see available commands.",
+				Output:  "Be at ease",
 			},
 		},
 	}

@@ -20,7 +20,7 @@ var (
 	cursorStyle  = lipgloss.NewStyle().Reverse(true)
 )
 
-// wrapText wraps the given text based on character length.
+// wrapText wraps the given text based on character length. IT shld wrap text based on how many words fit and wrap it transferring entire words not just letters
 func wrapText(text string, width int) []string {
 	if width <= 0 {
 		return []string{text}
@@ -46,14 +46,24 @@ func wrapText(text string, width int) []string {
 
 func (m Model) renderStatsPanel() string {
 	logoLines := []string{
-		"    ▄▄▄▄▄▄▄    ",
-		"  ▄▀       ▀▄  ",
-		" █   ▄▄▄▄▄   █ ",
-		" █  █  █  █  █ ",
-		" █   ▀▀▀▀▀   █ ",
-		"  ▀▄       ▄▀  ",
-		"    ▀▀▀▀▀▀▀    ",
+		"⠀⠀⠀⠀ ⢀⠀⠀⠀⠀⠀⠀⠀⠄⠀⠀⠀⠤⢀⣁⣀⠠⣤⠌⢻⣛⣷⣖⣿⣿⣿⣗⣷⠖⣿⣿⣿⣿⣻⣿⠯⣡⠔⢁⠔⣠⠞⣡⣔⠼⣶⠟⠮⣃⠐⠉⠁⠀⠀⠀⠉⠁⠀⠀⠠⡠⠤⠲⠊⡀⠄⠁⠀⠀  ⡄⣲",
+		"⠀⠀⠀ ⡠⠁⠀⠀⠀⠀⠀⠈⠑⠒⠈⢩⣶⣶⣶⣾⢲⣛⣿⢿⠟⣿⣿⣿⣿⡥⣶⡷⣟⣿⣿⣿⣿⡥⣚⣥⡾⣛⣛⣴⡿⠎⣫⠟⠉⠐⠂⢸⠐⠀⠀⠀⠀⠀⠀⠉⠁⠒⠑⠒⠀⠈⠀⠀  ⠀⢀⣴⣬⣾⣿⣋ ",
+		"⠀⢀⠔⠁⠀⠀⠀⢀⠀⠀⢀⣐⣛⢻⣿⠿⠿⠿⣽⡷⣯⣿⣶⣞⣭⣯⠷⣻⣽⣷⣿⣿⣿⡿⢛⠁⢅⣋⣝⣶⠶⠏⠡⠄⠒⠀⢈⠄⠀⠀⡠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀  ⠀⠀⠀⣀⢐⣴⣯⣿⣿⠟⣩⡿   ",
+		"⠀⠀⡤⠀⠀⢪⡠⠤⠬⢭⣭⢿⣟⣷⣽⣛⣛⣭⡿⣟⡿⢿⢿⣿⡿⣾⠻⠍⢓⠩⠕⠏⠉⠋⠐⠀⠂⠀⠀⠀⠀⠠⠈⠀⠀⣴⠀⠀⢀⠀⠀⣀⢀⣀⣠⣠⣤⣤⣴⣶⣶⣶⣶⣿⣿⣿⣿⣿⣿⣿⣟⣠⣾⠓⠀   ",
+		"⠀⣁⡤⠟⠙⢁⢔⠾⢫⢴⣯⣟⣿⠞⡝⠉⠉⠋⠃⠊⠁⠀⠀⣀⣅⣀⣀⣀⣀⣀⢠⣶⣠⣤⢤⣴⠶⣶⠾⠥⣴⡶⣶⣾⣭⣟⠺⡿⢟⠻⠟⠛⠻⣿⢿⣿⣟⣛⣭⣴⣾⣾⣿⣿⠿⠟⠋⠉⠁⠀       ⠀ ",
+		"⠜⡁⠤⢒⢀⣄⣴⠺⠛⠛⠑⣉⢠⡴⣶⣒⣢⣦⣦⣴⣾⣷⣿⣯⣿⣿⣿⣿⣿⣿⣼⣥⣤⣾⣿⣶⣾⣿⣶⣾⣴⣿⣷⣾⣶⣿⣿⣾⣷⣿⣿⣿⣿⣿⣿⣿⣿⡋⠉⢀⡠⠆⣀⣀⣀⣀⣀⠠           ",
+		"⡰⢖⣿⣻⠏⠛⠁⠀⠀⠠⢠⣶⣭⣾⢿⣛⣿⡯⣴⣷⣷⣿⣿⣿⣿⣿⣿⣿⣿⡟⢿⢿⣿⣿⣿⣿⣾⣿⣿⣿⡿⢿⣿⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣮⣙⣾⣿⡋⠉⠃⠉⠀⠀⠀⠀⠀           ",
+		"⠋⠉⠀⠀⠀⠀⠀⢄⣠⣴⠿⢫⣿⡷⣿⡹⠑⣱⣿⣿⣿⣋⠝⢋⡛⢿⣿⣿⣽⣿⣿⣾⡿⠻⣿⡟⢩⢻⣉⣿⢋⢂⢀⠄⢈⠋⢟⠟⢿⣿⣿⣿⢿⣿⢿⡿⣿⠫⣈⠑⠊⠉⠉⠉⠉⠉⠉⠉⠉          ",
+		"⡀⠀⠀⠀⠀⠀⣤⣾⢿⠿⣤⣾⡿⣱⣟⣷⣶⣿⡻⠹⣿⣏⠀⠨⠷⣼⣿⠿⣿⠿⠿⠿⠓⡖⢯⣣⡈⠨⣽⠏⠈⠈⠊⠀⠈⠂⠘⠆⣬⡿⠋⢩⡘⠟⠚⠓⠿⡦⣉⠂⡀⠀⠀⠀⠀⠀⠀⠀			",
+		"⠀⠀⠀⢀⡴⡾⡿⠃⣠⣼⣿⢿⡟⠛⠓⠒⠀⠀⠀⠀⠈⢷⣦⡄⠁⠈⠁⢀⠁⠀⠀⠐⠀⠐⢈⢊⢮⣿⠏⠀⠀⠀⠀⠀⠀⠀⢰⡽⠟⠀⣶⣿⡿⣇⠉⠛⢬⣧⠂⠑⠂⠁⠀⠀⠀⠀⠀⠀			",
+		"⠀⠀⢀⢽⡾⠋⢠⣾⢟⡾⠟⡟⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⢿⣷⣤⡤⢀⢀⠠⢀⣀⡀⢀⣠⠶⠋⠀⠀⠀⠀⠀⠀⣀⣤⠖⠋⠀⣠⣾⣯⣟⣛⣾⡆⠀⠀⠹⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀			",
+		"⠀⠀⡡⢉⣤⢞⡽⠒⠋⣴⠬⠼⠓⠒⠦⠤⠤⣀⣀⡀⠀⠀⠀⠀⠀⠛⠛⠛⠗⠿⠿⠛⠛⠋⠁⠀⠀⠀⠀⡀⠄⠐⠈⠀⢀⣠⣶⣿⣿⣷⡃⠈⢉⢼⠗⠀⠀⠰⠐⠀⠀⠀⠀⠀⠀⠀⠀⠀			",
+		"⠀⠀⢔⡿⢵⠟⠒⢉⣡⡴⠵⠒⠚⣲⠤⢖⡀⡀⠤⠈⠚⠛⠚⠶⠤⠤⠤⠄⠀⠀⠄⢀⠀⠀⠔⠒⠂⠉⠀⢀⣀⣤⣰⣵⣿⢿⣿⠿⣿⣿⣯⢊⠼⡋⣹⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀			",
+		"⠀⠀⠡⠀⠈⠀⠐⠁⠀⠀⠀⠐⠾⣭⣶⠉⣼⡽⠛⡥⣢⢤⣤⣀⡀⠀⠀⠀⠀⠀⠀⡀⣀⢀⢀⣀⢠⣖⣽⡼⡧⣙⠿⢿⣷⡧⢉⣾⢠⡺⣿⠏⢈⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀			",
+		"⠀⠀⠁⡘⠀⠀⢄⠀⠠⢀⠀⢂⢼⠏⠀⣹⡟⠠⠀⣰⣘⣹⣡⡞⠛⣦⢱⢆⢑⢶⢤⡈⡖⣗⡷⣷⣥⡇⠈⣧⡇⢀⣠⣦⢿⣟⠋⠠⠳⠍⣼⠁⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀			",
+		"⠀⠀⠀⠀⠀⠀⠀⠀⠐⠀⡠⢚⠋⠀⢰⠋⡆⠀⠀⠓⠁⣿⡏⣀⠀⠘⣞⡾⠃⢸⢿⢾⣡⣿⠄⠐⢽⡗⡀⣻⣇⡧⠟⢛⢉⡗⠀⠀⠀⢀⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀			",
 	}
+	// idea for later on, mirrored image on left side,constraint in mind,terminal resizing
 
 	store := data.GetPortfolioData()
 	uptime := time.Since(store.ProjectStart)
@@ -68,19 +78,23 @@ func (m Model) renderStatsPanel() string {
 
 	stats := []string{
 		lipgloss.NewStyle().Foreground(lipgloss.Color("#50fa7b")).Bold(true).Render("ARGUS CORE CONTROLLER v1.0.0"),
-		labelStyle.Render("Uptime:     ") + valStyle.Render(uptimeStr),
-		labelStyle.Render("Terminal:   ") + valStyle.Render(fmt.Sprintf("%dx%d", m.TerminalWidth, m.TerminalHeight)),
+		labelStyle.Render("Project age:     ") + valStyle.Render(uptimeStr),
+		labelStyle.Render("Terminal size:   ") + valStyle.Render(fmt.Sprintf("%dx%d", m.TerminalWidth, m.TerminalHeight)),
 		labelStyle.Render("Shell/Host: ") + valStyle.Render(hostMode),
-		labelStyle.Render("Commands:   ") + valStyle.Render("about, projects, skills, contact, clear, exit, quit"),
-		labelStyle.Render("Engine:     ") + valStyle.Render("Go / Bubble Tea / Lip Gloss"),
+
+		labelStyle.Render("github:     ") + valStyle.Render("NyxUltor"),
 		labelStyle.Render("Status:     ") + lipgloss.NewStyle().Foreground(lipgloss.Color("#50fa7b")).Bold(true).Render("ONLINE"),
 	}
 
 	var lines []string
 	for i := 0; i < len(logoLines); i++ {
 		logoPart := logoStyle.Render(logoLines[i])
-		statPart := stats[i]
-		lines = append(lines, fmt.Sprintf("  %s   %s", logoPart, statPart))
+		if i < len(stats) {
+			statPart := stats[i]
+			lines = append(lines, fmt.Sprintf("  %s   %s", logoPart, statPart))
+		} else {
+			lines = append(lines, fmt.Sprintf("  %s", logoPart))
+		}
 	}
 	return strings.Join(lines, "\n")
 }
@@ -94,8 +108,11 @@ func (m Model) renderSuggestions() string {
 	)
 }
 
+// currently the suggestions are only displayed they should also allow for selection and auto-completion of the input buffer when selected through navigration keys.
+
 func (m Model) renderInputLine() string {
-	prompt := promptStyle.Render("[veryl@ARGUS ~]$ ")
+	// Dynamically uses m.SystemUsername for the input prompt
+	prompt := promptStyle.Render(fmt.Sprintf("[%s@ARGUS ~]$ ", m.SystemUsername))
 	runes := []rune(m.InputBuffer)
 
 	cursorPos := m.CursorPos
@@ -132,8 +149,8 @@ func (m Model) renderInputSection() string {
 func (m Model) renderHistoryLines() []string {
 	var lines []string
 	for _, item := range m.History {
-		// Render prompt line
-		promptLine := promptStyle.Render("[veryl@ARGUS ~]$ ") + item.Command
+		// Dynamically uses m.SystemUsername for historical command prompts too!
+		promptLine := promptStyle.Render(fmt.Sprintf("[%s@ARGUS ~]$ ", m.SystemUsername)) + item.Command
 		lines = append(lines, promptLine)
 
 		// Render output lines
@@ -161,9 +178,6 @@ func (m Model) View() string {
 	H_input := len(inputLines)
 
 	// 3. Spacing and height calculations for scrolling history
-	// Separators:
-	// - Border 1 (under stats panel): 1 line
-	// - Border 2 (above input line): 1 line
 	H_history := m.TerminalHeight - H_top - H_input - 2
 	if H_history < 0 {
 		H_history = 0
@@ -188,8 +202,8 @@ func (m Model) View() string {
 	var s strings.Builder
 	s.WriteString(topSection)
 	s.WriteString("\n")
-	s.WriteString(borderStyle1.Render(strings.Repeat("═", m.TerminalWidth)))
-	s.WriteString("\n")
+	// s.WriteString(borderStyle1.Render(strings.Repeat("═", m.TerminalWidth)))
+	// s.WriteString("\n")
 	s.WriteString(historySection)
 	s.WriteString("\n")
 	s.WriteString(borderStyle2.Render(strings.Repeat("─", m.TerminalWidth)))
