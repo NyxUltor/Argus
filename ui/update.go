@@ -63,6 +63,48 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tea.MouseMsg:
+		if msg.Button == tea.MouseButtonWheelUp {
+			maxScroll := m.MaxScrollOffset()
+			m.ScrollOffset++
+			if m.ScrollOffset > maxScroll {
+				m.ScrollOffset = maxScroll
+			}
+			return m, nil
+		}
+		if msg.Button == tea.MouseButtonWheelDown {
+			m.ScrollOffset--
+			if m.ScrollOffset < 0 {
+				m.ScrollOffset = 0
+			}
+			return m, nil
+		}
+		if msg.Action == tea.MouseActionRelease && msg.X >= m.TerminalWidth-2 {
+			statsHeight := len(strings.Split(m.renderStatsPanel(), "\n"))
+			clickY := msg.Y - statsHeight
+			if clickY >= 0 {
+				H_history := m.TerminalHeight - statsHeight - len(strings.Split(m.renderInputSection(), "\n")) - 2
+				if H_history > 0 {
+					ratio := float64(clickY) / float64(H_history)
+					if ratio < 0 {
+						ratio = 0
+					}
+					if ratio > 1 {
+						ratio = 1
+					}
+					max := m.MaxScrollOffset()
+					m.ScrollOffset = max - int(ratio*float64(max)+0.5)
+					if m.ScrollOffset < 0 {
+						m.ScrollOffset = 0
+					}
+					if m.ScrollOffset > max {
+						m.ScrollOffset = max
+					}
+				}
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -108,6 +150,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "enter":
+			m.ScrollOffset = 0
 			cmdText := m.InputBuffer
 			cmdClean := strings.TrimSpace(strings.ToLower(cmdText))
 			m.InputBuffer = ""

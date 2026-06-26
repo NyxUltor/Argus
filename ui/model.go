@@ -25,7 +25,8 @@ type Model struct {
 	TerminalHeight int
 	SystemUsername string
 
-	History []HistoryItem
+	History      []HistoryItem
+	ScrollOffset int
 }
 
 func InitialModel() Model {
@@ -54,6 +55,7 @@ func InitialModel() Model {
 				Output:  "Be at ease",
 			},
 		},
+		ScrollOffset: 0,
 	}
 }
 

@@ -20,7 +20,6 @@ var (
 	cursorStyle  = lipgloss.NewStyle().Reverse(true)
 )
 
-// wrapText wraps the given text based on character length. IT shld wrap text based on how many words fit and wrap it transferring entire words not just letters
 func wrapText(text string, width int) []string {
 	if width <= 0 {
 		return []string{text}
@@ -32,13 +31,34 @@ func wrapText(text string, width int) []string {
 			result = append(result, "")
 			continue
 		}
-		runes := []rune(line)
-		for len(runes) > width {
-			result = append(result, string(runes[:width]))
-			runes = runes[width:]
+		words := strings.Fields(line)
+		current := ""
+		for _, word := range words {
+			wordRunes := []rune(word)
+			spaceNeeded := 0
+			if current != "" {
+				spaceNeeded = 1
+			}
+			if len([]rune(current))+spaceNeeded+len(wordRunes) > width {
+				if current != "" {
+					result = append(result, current)
+					current = ""
+				}
+				for len(wordRunes) > width {
+					result = append(result, string(wordRunes[:width]))
+					wordRunes = wordRunes[width:]
+				}
+				current = string(wordRunes)
+			} else {
+				if current == "" {
+					current = word
+				} else {
+					current += " " + word
+				}
+			}
 		}
-		if len(runes) > 0 {
-			result = append(result, string(runes))
+		if current != "" {
+			result = append(result, current)
 		}
 	}
 	return result
@@ -155,11 +175,20 @@ func (m Model) renderHistoryLines() []string {
 
 		// Render output lines
 		if item.Output != "" {
-			outputLines := wrapText(item.Output, m.TerminalWidth)
+			outputLines := wrapText(item.Output, m.TerminalWidth-2)
 			lines = append(lines, outputLines...)
 		}
 	}
 	return lines
+}
+
+func (m Model) MaxScrollOffset() int {
+	H_history := m.TerminalHeight - len(strings.Split(m.renderStatsPanel(), "\n")) - len(strings.Split(m.renderInputSection(), "\n")) - 2
+	maxScroll := len(m.renderHistoryLines()) - H_history
+	if maxScroll < 0 {
+		return 0
+	}
+	return maxScroll
 }
 
 func (m Model) View() string {
@@ -187,7 +216,53 @@ func (m Model) View() string {
 
 	var historySection string
 	if len(historyLines) > H_history {
-		historySection = strings.Join(historyLines[len(historyLines)-H_history:], "\n")
+		start := len(historyLines) - H_history - m.ScrollOffset
+		end := len(historyLines) - m.ScrollOffset
+		if start < 0 {
+			start = 0
+		}
+		if end > len(historyLines) {
+			end = len(historyLines)
+		}
+		visibleLines := historyLines[start:end]
+
+		maxScroll := len(historyLines) - H_history
+		ratio := 0.0
+		if maxScroll > 0 {
+			ratio = float64(m.ScrollOffset) / float64(maxScroll)
+		}
+		if ratio < 0 {
+			ratio = 0
+		}
+		if ratio > 1 {
+			ratio = 1
+		}
+
+		handlePos := 0
+		if H_history > 1 {
+			handlePos = (H_history - 1) - int(ratio*float64(H_history-1)+0.5)
+		}
+
+		finalLines := make([]string, H_history)
+		for i := 0; i < H_history; i++ {
+			if i < len(visibleLines) {
+				finalLines[i] = visibleLines[i]
+			} else {
+				padLen := m.TerminalWidth - 2
+				finalLines[i] = strings.Repeat(" ", padLen)
+			}
+			visWidth := lipgloss.Width(finalLines[i])
+			padLen := (m.TerminalWidth - 2) - visWidth
+			if padLen > 0 {
+				finalLines[i] += strings.Repeat(" ", padLen)
+			}
+			if i == handlePos {
+				finalLines[i] += " " + borderStyle1.Render("█")
+			} else {
+				finalLines[i] += " " + borderStyle2.Render("│")
+			}
+		}
+		historySection = strings.Join(finalLines, "\n")
 	} else {
 		// Pad with blank lines at the top of history to keep content stacked towards bottom
 		paddingCount := H_history - len(historyLines)
