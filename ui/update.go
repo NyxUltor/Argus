@@ -1,11 +1,12 @@
 package ui
 
+// update.go — Bubble Tea Update loop and Init.
+// Command output logic lives in commands.go.
+// Message types live in messages.go.
+// Layout math lives in layout.go.
+
 import (
-	"fmt"
-	"math/rand"
-	"sort"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"argus/autocomplete"
@@ -14,55 +15,21 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
-
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-// getCommandOutput returns the static output for built-in commands
-func getCommandOutput(cmd string) string {
-	store := data.GetPortfolioData()
-	switch cmd {
-	case "about":
-		return store.AboutText
-	case "skills":
-		var sb strings.Builder
-		sb.WriteString("--- RECOGNIZED SYSTEM CAPABILITIES ---\n")
-		for _, skill := range store.Skills {
-			sb.WriteString(fmt.Sprintf("* %s\n", skill))
-		}
-		return sb.String()
-	case "projects":
-		var sb strings.Builder
-		sb.WriteString("--- ACTIVE BUILD PIPELINES ---\n")
-		var keys []string
-		for k := range store.Projects {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			proj := store.Projects[k]
-			sb.WriteString(fmt.Sprintf("\n> %s [%s]\n  %s\n", proj.Name, strings.Join(proj.Stack, ", "), proj.Description))
-		}
-		return sb.String()
-	case "contact":
-		return store.ContactText
-	case "help":
-		return "Available system commands: about, projects, skills, contact, clear, exit, quit"
-	default:
-		return ""
-	}
-}
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+
+	// --- Async command completion ---
 	case commandFinishedMsg:
 		if msg.Index >= 0 && msg.Index < len(m.History) {
 			m.History[msg.Index].Output = msg.Output
 		}
 		return m, nil
 
+	// --- Mouse: scroll wheel and scrollbar click ---
 	case tea.MouseMsg:
 		if msg.Button == tea.MouseButtonWheelUp {
 			maxScroll := m.MaxScrollOffset()
@@ -79,6 +46,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		// Scrollbar track click: right-most two columns.
 		if msg.Action == tea.MouseActionRelease && msg.X >= m.TerminalWidth-2 {
 			statsHeight := len(strings.Split(m.renderStatsPanel(), "\n"))
 			clickY := msg.Y - statsHeight
@@ -105,6 +73,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	// --- Keyboard ---
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -128,8 +97,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "end", "ctrl+e":
-			runes := []rune(m.InputBuffer)
-			m.CursorPos = len(runes)
+			m.CursorPos = len([]rune(m.InputBuffer))
 			return m, nil
 
 		case "backspace":
@@ -150,82 +118,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "enter":
-			m.ScrollOffset = 0
-			cmdText := m.InputBuffer
-			cmdClean := strings.TrimSpace(strings.ToLower(cmdText))
-			m.InputBuffer = ""
-			m.CursorPos = 0
-			m.Suggestions = []string{}
+			return m.handleEnter()
 
-			if cmdClean == "" {
-				return m, nil
-			}
-
-			if cmdClean == "exit" || cmdClean == "quit" {
-				return m, tea.Quit
-			}
-
-			if cmdClean == "clear" {
-				m.History = []HistoryItem{}
-				return m, nil
-			}
-
-			// check if it's a built-in
-			store := data.GetPortfolioData()
-			isBuiltin := false
-			builtins := append(store.Commands, "sudo", "help")
-			for _, b := range builtins {
-				if cmdClean == b {
-					isBuiltin = true
-					break
-				}
-			}
-
-			var output string
-
-			if isBuiltin {
-				if cmdClean == "sudo" { // Just in case you did put it in builtins
-					quotes := []string{
-						"Who decided that?",
-						"That level of genjutsu doesn't work on me.",
-						"Since when did you fall under the illusion that you could command me?",
-					}
-					output = quotes[rng.Intn(len(quotes))]
-					m.History = append(m.History, HistoryItem{
-						Command: cmdText,
-						Output:  output,
-					})
-					return m, nil
-				}
-
-				output = getCommandOutput(cmdClean)
-				m.History = append(m.History, HistoryItem{
-					Command: cmdText,
-					Output:  output,
-				})
-				return m, nil
-
-			} else {
-				// CATCH ALL UNRECOGNIZED COMMANDS HERE
-
-				// If they try to run a local system command with sudo, block it with style
-				if cmdClean == "sudo" || strings.HasPrefix(cmdText, "sudo ") {
-					quotes := []string{
-						"Who decided that?",
-						"That level of genjutsu doesn't work on me.",
-						"Since when did you fall under the illusion that you could command me?",
-					}
-					output = quotes[rng.Intn(len(quotes))]
-					m.History = append(m.History, HistoryItem{
-						Command: cmdText,
-						Output:  output,
-					})
-					return m, nil
-				}
-
-				// Otherwise, hand it off to your exec files (local runs it, ssh says command not found)
-				return handleFallbackCommand(m, cmdText)
-			}
 		default:
 			if utf8.RuneCountInString(msg.String()) == 1 {
 				runes := []rune(m.InputBuffer)
@@ -241,10 +135,65 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	// --- Terminal resize ---
 	case tea.WindowSizeMsg:
 		m.TerminalWidth = msg.Width
 		m.TerminalHeight = msg.Height
+		// Bug 3 fix: clamp ScrollOffset to the newly recalculated boundary.
+		maxScroll := m.MaxScrollOffset()
+		if m.ScrollOffset > maxScroll {
+			m.ScrollOffset = maxScroll
+		}
+		if m.ScrollOffset < 0 {
+			m.ScrollOffset = 0
+		}
 	}
 
 	return m, nil
+}
+
+// handleEnter processes a submitted command, dispatching to built-ins or fallback exec.
+func (m Model) handleEnter() (tea.Model, tea.Cmd) {
+	m.ScrollOffset = 0
+	cmdText := m.InputBuffer
+	cmdClean := strings.TrimSpace(strings.ToLower(cmdText))
+	m.InputBuffer = ""
+	m.CursorPos = 0
+	m.Suggestions = []string{}
+
+	if cmdClean == "" {
+		return m, nil
+	}
+	if cmdClean == "exit" || cmdClean == "quit" {
+		return m, tea.Quit
+	}
+	if cmdClean == "clear" {
+		m.History = []HistoryItem{}
+		return m, nil
+	}
+
+	// Sudo intercept (applies everywhere, before built-in check).
+	if isSudoAttempt(cmdClean, cmdText) {
+		m.History = append(m.History, HistoryItem{
+			Command: cmdText,
+			Output:  randomSudoResponse(),
+		})
+		return m, nil
+	}
+
+	// Built-in command lookup.
+	store := data.GetPortfolioData()
+	for _, b := range store.Commands {
+		if cmdClean == b {
+			output := getCommandOutput(cmdClean)
+			m.History = append(m.History, HistoryItem{
+				Command: cmdText,
+				Output:  output,
+			})
+			return m, nil
+		}
+	}
+
+	// Unrecognised — fall through to build-tag-selected exec handler.
+	return handleFallbackCommand(m, cmdText)
 }

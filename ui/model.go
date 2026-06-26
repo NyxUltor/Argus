@@ -1,17 +1,17 @@
 package ui
 
+// model.go — Model struct definition and constructor.
+// Message types live in messages.go.
+
 import "os/user"
 
+// HistoryItem stores a single command and its output in the session history.
 type HistoryItem struct {
 	Command string
 	Output  string
 }
 
-type commandFinishedMsg struct {
-	Index  int
-	Output string
-}
-
+// Model is the central Bubble Tea application state.
 type Model struct {
 	InputBuffer    string
 	CursorPos      int
@@ -29,18 +29,15 @@ type Model struct {
 	ScrollOffset int
 }
 
+// InitialModel constructs the default application state.
 func InitialModel() Model {
-	// 1. Create a default fallback name
 	username := "mysterious_user"
-
-	// 2. Try to get the real OS username
 	if sysUser, err := user.Current(); err == nil {
 		username = sysUser.Username
 	}
 
-	// 3. Return your model using that username variable
 	return Model{
-		SystemUsername: username, // <-- Works perfectly every time now!
+		SystemUsername: username,
 		InputBuffer:    "",
 		CursorPos:      0,
 		Suggestions:    []string{},
@@ -59,6 +56,7 @@ func InitialModel() Model {
 	}
 }
 
+// ResetPrompt clears the input line and any transient UI state.
 func (m Model) ResetPrompt() Model {
 	m.InputBuffer = ""
 	m.CursorPos = 0
