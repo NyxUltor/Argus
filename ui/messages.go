@@ -10,3 +10,12 @@ type commandFinishedMsg struct {
 	Index  int
 	Output string
 }
+
+// ballTickMsg drives the ball physics update loop.
+type ballTickMsg struct{}
+
+// eyeTickMsg drives the floating eye movement and cooldown.
+type eyeTickMsg struct{}
+
+// takeoverTickMsg drives fullscreen demo frame updates.
+type takeoverTickMsg struct{}

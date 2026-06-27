@@ -57,8 +57,24 @@ func getCommandOutput(cmd string) string {
 	case "contact":
 		return store.ContactText
 
+	case "stats":
+		return store.StatsText
+
+	case "fun":
+		return `--- FUN COMMANDS ---
+
+Overlay  (type 'over' to dismiss, or just run another command):
+  summon ball -n     spawn n bouncing balls, max 20, stacks across calls
+
+Takeover  (press any key to return):
+  summon matrix      matrix rain
+  summon starfield   starfield warp
+
+Easter egg:
+  ...                you'll know it when you see it`
+
 	case "help":
-		return "Available system commands: about, projects, skills, contact, clear, exit, quit"
+		return "Available system commands: about, projects, skills, stats, contact, fun, clear, exit, quit"
 
 	default:
 		return ""

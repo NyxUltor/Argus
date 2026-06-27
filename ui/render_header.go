@@ -35,9 +35,9 @@ func (m Model) renderStatsPanel() string {
 	}
 
 	var lines []string
-	logoLines := store.LogoLines
-	for i := 0; i < len(logoLines); i++ {
-		logoPart := logoStyle.Render(logoLines[i])
+	art := applyIrisOffset(EyeArt, m.irisTarget(), m.TerminalWidth, m.TerminalHeight)
+	for i := 0; i < len(art); i++ {
+		logoPart := logoStyle.Render(art[i])
 		if i < len(stats) {
 			lines = append(lines, fmt.Sprintf("  %s   %s", logoPart, stats[i]))
 		} else {

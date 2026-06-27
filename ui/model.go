@@ -3,7 +3,10 @@ package ui
 // model.go — Model struct definition and constructor.
 // Message types live in messages.go.
 
-import "os/user"
+import (
+	"os/user"
+	"time"
+)
 
 // HistoryItem stores a single command and its output in the session history.
 type HistoryItem struct {
@@ -27,6 +30,20 @@ type Model struct {
 
 	History      []HistoryItem
 	ScrollOffset int
+
+	// Animation — overlay
+	Balls []Ball
+
+	// Animation — takeover
+	ActiveTakeover TakeoverType
+
+	// Easter egg
+	FloatingEye          *FloatingEyeState
+	EyeCooldownRemaining time.Duration
+
+	// Input tracking for iris
+	MouseX int
+	MouseY int
 }
 
 // InitialModel constructs the default application state.
@@ -52,7 +69,8 @@ func InitialModel() Model {
 				Output:  "Be at ease",
 			},
 		},
-		ScrollOffset: 0,
+		ScrollOffset:         0,
+		EyeCooldownRemaining: randomEyeCooldown(),
 	}
 }
 
@@ -67,4 +85,14 @@ func (m Model) ResetPrompt() Model {
 	m.SelectedProj = ""
 	m.Message = ""
 	return m
+}
+
+func (m Model) irisTarget() IrisTarget {
+	if m.FloatingEye != nil {
+		return IrisTarget{X: int(m.FloatingEye.X), Y: int(m.FloatingEye.Y), Active: true}
+	}
+	if m.MouseX > 0 || m.MouseY > 0 {
+		return IrisTarget{X: m.MouseX, Y: m.MouseY, Active: true}
+	}
+	return IrisTarget{}
 }

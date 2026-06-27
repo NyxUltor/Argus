@@ -25,7 +25,7 @@ type PortfolioStore struct {
 	Commands     []string
 	ProjectStart time.Time
 	OwnerHandle  string
-	LogoLines    []string
+	StatsText    string
 }
 
 var (
@@ -38,14 +38,14 @@ var (
 func GetPortfolioData() PortfolioStore {
 	storeOnce.Do(func() {
 		cachedStore = PortfolioStore{
-			Commands:     []string{"about", "projects", "skills", "contact", "clear", "exit", "quit"},
+			Commands:     []string{"about", "projects", "skills", "contact", "stats", "fun", "clear", "exit", "quit"},
 			AboutText:    AboutText,
 			ContactText:  ContactText,
 			Skills:       Skills,
 			Projects:     Projects,
 			ProjectStart: ProjectStart,
 			OwnerHandle:  OwnerHandle,
-			LogoLines:    LogoLines,
+			StatsText:    StatsText,
 		}
 	})
 	return cachedStore

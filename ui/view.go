@@ -12,6 +12,9 @@ import (
 )
 
 func (m Model) View() string {
+	if m.ActiveTakeover != TakeoverNone {
+		return m.renderTakeover()
+	}
 	if m.TerminalWidth == 0 || m.TerminalHeight == 0 {
 		return "Initializing screen buffer..."
 	}
@@ -103,5 +106,9 @@ func (m Model) View() string {
 	s.WriteString("\n")
 	s.WriteString(inputSection)
 
-	return s.String()
+	baseView := s.String()
+	if len(m.Balls) > 0 || m.FloatingEye != nil {
+		return stampOverlay(baseView, m.buildSprites())
+	}
+	return baseView
 }

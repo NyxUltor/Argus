@@ -15,8 +15,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func enableMouse() tea.Msg {
+	return tea.EnableMouseAllMotion()
+}
+
 func (m Model) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		eyeTick(),
+		enableMouse,
+	)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -29,8 +36,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case ballTickMsg:
+		if len(m.Balls) > 0 {
+			m = m.updateBalls()
+			return m, ballTick()
+		}
+		return m, nil
+
+	case eyeTickMsg:
+		m = m.updateFloatingEye()
+		return m, eyeTick()
+
+	case takeoverTickMsg:
+		// TODO: update takeover-specific state per demo
+		return m, nil
+
 	// --- Mouse: scroll wheel and scrollbar click ---
 	case tea.MouseMsg:
+		m.MouseX = msg.X
+		m.MouseY = msg.Y
 		if msg.Button == tea.MouseButtonWheelUp {
 			maxScroll := m.MaxScrollOffset()
 			m.ScrollOffset++
@@ -75,6 +99,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// --- Keyboard ---
 	case tea.KeyMsg:
+		// Takeover: any key exits back to portfolio. Key is consumed.
+		if m.ActiveTakeover != TakeoverNone {
+			m = m.clearTakeover()
+			return m, nil
+		}
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
@@ -169,7 +198,35 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	}
 	if cmdClean == "clear" {
 		m.History = []HistoryItem{}
+		m.Balls = []Ball{}
 		return m, nil
+	}
+
+	// summon dispatch
+	if strings.HasPrefix(cmdClean, "summon ") {
+		return m.handleSummon(cmdClean)
+	}
+
+	// 'over' terminates active overlay
+	if cmdClean == "over" {
+		if len(m.Balls) == 0 && m.FloatingEye == nil {
+			m.History = append(m.History, HistoryItem{
+				Command: cmdText,
+				Output:  "No active overlay to dismiss.",
+			})
+			return m, nil
+		}
+		m.Balls = []Ball{}
+		return m, nil
+	}
+
+	// Any command during overlay clears balls before executing
+	if len(m.Balls) > 0 {
+		m.Balls = []Ball{}
+	}
+	// Any command during takeover clears it
+	if m.ActiveTakeover != TakeoverNone {
+		m = m.clearTakeover()
 	}
 
 	// Sudo intercept (applies everywhere, before built-in check).

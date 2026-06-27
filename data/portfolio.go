@@ -13,67 +13,76 @@ const OwnerHandle = "NyxUltor"
 // ProjectStart is the anchor date used to calculate the live project uptime counter.
 var ProjectStart = time.Date(2026, time.June, 19, 12, 30, 0, 0, time.Local)
 
-// LogoLines is the ASCII/braille art displayed in the header panel.
-// Each element is one terminal row. Keep all lines roughly the same display width
-// so the stats column aligns neatly.
-var LogoLines = []string{
-	"⠀⠀⠀⠀ ⢀⠀⠀⠀⠀⠀⠀⠀⠄⠀⠀⠀⠤⢀⣁⣀⠠⣤⠌⢻⣛⣷⣖⣿⣿⣿⣗⣷⠖⣿⣿⣿⣿⣻⣿⠯⣡⠔⢁⠔⣠⠞⣡⣔⠼⣶⠟⠮⣃⠐⠉⠁⠀⠀⠀⠉⠁⠀⠀⠠⡠⠤⠲⠊⡀⠄⠁⠀⠀  ⡄⣲",
-	"⠀⠀⠀ ⡠⠁⠀⠀⠀⠀⠀⠈⠑⠒⠈⢩⣶⣶⣶⣾⢲⣛⣿⢿⠟⣿⣿⣿⣿⡥⣶⡷⣟⣿⣿⣿⣿⡥⣚⣥⡾⣛⣛⣴⡿⠎⣫⠟⠉⠐⠂⢸⠐⠀⠀⠀⠀⠀⠀⠉⠁⠒⠑⠒⠀⠈⠀⠀  ⠀⢀⣴⣬⣾⣿⣋ ",
-	"⠀⢀⠔⠁⠀⠀⠀⢀⠀⠀⢀⣐⣛⢻⣿⠿⠿⠿⣽⡷⣯⣿⣶⣞⣭⣯⠷⣻⣽⣷⣿⣿⣿⡿⢛⠁⢅⣋⣝⣶⠶⠏⠡⠄⠒⠀⢈⠄⠀⠀⡠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀  ⠀⠀⠀⣀⢐⣴⣯⣿⣿⠟⣩⡿   ",
-	"⠀⠀⡤⠀⠀⢪⡠⠤⠬⢭⣭⢿⣟⣷⣽⣛⣛⣭⡿⣟⡿⢿⢿⣿⡿⣾⠻⠍⢓⠩⠕⠏⠉⠋⠐⠀⠂⠀⠀⠀⠀⠠⠈⠀⠀⣴⠀⠀⢀⠀⠀⣀⢀⣀⣠⣠⣤⣤⣴⣶⣶⣶⣶⣿⣿⣿⣿⣿⣿⣿⣟⣠⣾⠓⠀   ",
-	"⠀⣁⡤⠟⠙⢁⢔⠾⢫⢴⣯⣟⣿⠞⡝⠉⠉⠋⠃⠊⠁⠀⠀⣀⣅⣀⣀⣀⣀⣀⢠⣶⣠⣤⢤⣴⠶⣶⠾⠥⣴⡶⣶⣾⣭⣟⠺⡿⢟⠻⠟⠛⠻⣿⢿⣿⣟⣛⣭⣴⣾⣾⣿⣿⠿⠟⠋⠉⠁⠀       ⠀ ",
-	"⠜⡁⠤⢒⢀⣄⣴⠺⠛⠛⠑⣉⢠⡴⣶⣒⣢⣦⣦⣴⣾⣷⣿⣯⣿⣿⣿⣿⣿⣿⣼⣥⣤⣾⣿⣶⣾⣿⣶⣾⣴⣿⣷⣾⣶⣿⣿⣾⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣋⠉⢀⡠⠆⣀⣀⣀⣀⣀⠠           ",
-	"⡰⢖⣿⣻⠏⠛⠁⠀⠀⠠⢠⣶⣭⣾⢿⣛⣿⡯⣴⣷⣷⣿⣿⣿⣿⣿⣿⣿⣿⡟⢿⢿⣿⣿⣿⣿⣾⣿⣿⣿⡿⢿⣿⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣮⣙⣾⣿⡋⠉⠃⠉⠀⠀⠀⠀⠀           ",
-	"⠋⠉⠀⠀⠀⠀⠀⢄⣠⣴⠿⢫⣿⡷⣿⡹⠑⣱⣿⣿⣿⣋⠝⢋⡛⢿⣿⣿⣽⣿⣿⣾⡿⠻⣿⡟⢩⢻⣉⣿⢋⢂⢀⠄⢈⠋⢟⠟⢿⣿⣿⣿⢿⣿⢿⡿⣿⠫⣈⠑⠊⠉⠉⠉⠉⠉⠉⠉⠉          ",
-	"⡀⠀⠀⠀⠀⠀⣤⣾⢿⠿⣤⣾⡿⣱⣟⣷⣶⣿⡻⠹⣿⣏⠀⠨⠷⣼⣿⠿⣿⠿⠿⠿⠓⡖⢯⣣⡈⠨⣽⠏⠈⠈⠊⠀⠈⠂⠘⠆⣬⡿⠋⢩⡘⠟⠚⠓⠿⡦⣉⠂⡀⠀⠀⠀⠀⠀⠀⠀\t\t\t",
-	"⠀⠀⠀⢀⡴⡾⡿⠃⣠⣼⣿⢿⡟⠛⠓⠒⠀⠀⠀⠀⠈⢷⣦⡄⠁⠈⠁⢀⠁⠀⠀⠐⠀⠐⢈⢊⢮⣿⠏⠀⠀⠀⠀⠀⠀⠀⢰⡽⠟⠀⣶⣿⡿⣇⠉⠛⢬⣧⠂⠑⠂⠁⠀⠀⠀⠀⠀⠀\t\t\t",
-	"⠀⠀⢀⢽⡾⠋⢠⣾⢟⡾⠟⡟⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⢿⣷⣤⡤⢀⢀⠠⢀⣀⡀⢀⣠⠶⠋⠀⠀⠀⠀⠀⠀⣀⣤⠖⠋⠀⣠⣾⣯⣟⣛⣾⡆⠀⠀⠹⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀\t\t\t",
-	"⠀⠀⡡⢉⣤⢞⡽⠒⠋⣴⠬⠼⠓⠒⠦⠤⠤⣀⣀⡀⠀⠀⠀⠀⠀⠛⠛⠛⠗⠿⠿⠛⠛⠋⠁⠀⠀⠀⠀⡀⠄⠐⠈⠀⢀⣠⣶⣿⣿⣷⡃⠈⢉⢼⠗⠀⠀⠰⠐⠀⠀⠀⠀⠀⠀⠀⠀⠀\t\t\t",
-	"⠀⠀⢔⡿⢵⠟⠒⢉⣡⡴⠵⠒⠚⣲⠤⢖⡀⡀⠤⠈⠚⠛⠚⠶⠤⠤⠤⠄⠀⠀⠄⢀⠀⠀⠔⠒⠂⠉⠀⢀⣀⣤⣰⣵⣿⢿⣿⠿⣿⣿⣯⢊⠼⡋⣹⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\t\t\t",
-	"⠀⠀⠡⠀⠈⠀⠐⠁⠀⠀⠀⠐⠾⣭⣶⠉⣼⡽⠛⡥⣢⢤⣤⣀⡀⠀⠀⠀⠀⠀⠀⡀⣀⢀⢀⣀⢠⣖⣽⡼⡧⣙⠿⢿⣷⡧⢉⣾⢠⡺⣿⠏⢈⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\t\t\t",
-	"⠀⠀⠁⡘⠀⠀⢄⠀⠠⢀⠀⢂⢼⠏⠀⣹⡟⠠⠀⣰⣘⣹⣡⡞⠛⣦⢱⢆⢑⢶⢤⡈⡖⣗⡷⣷⣥⡇⠈⣧⡇⢀⣠⣦⢿⣟⠋⠠⠳⠍⣼⠁⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\t\t\t",
-	"⠀⠀⠀⠀⠀⠀⠀⠀⠐⠀⡠⢚⠋⠀⢰⠋⡆⠀⠀⠓⠁⣿⡏⣀⠀⠘⣞⡾⠃⢸⢿⢾⣡⣿⠄⠐⢽⡗⡀⣻⣇⡧⠟⢛⢉⡗⠀⠀⠀⢀⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\t\t\t",
-}
+
 
 // AboutText is rendered by the `about` command.
-const AboutText = `--- ABOUT ME ---
-Developer building efficient software and tailored developer tools.
-Driven by an interest in low-overhead systems, Linux architectures, 
-and practical engineering solutions. 
+const AboutText = `--- ABOUT ---
+Independent systems designer. I conceptualize, architect, and direct
+software from specification to stable release — handling system design,
+logic-flow, UX decisions, and quality control across the full build cycle.
 
-I prioritize reliability, simplicity, and measurable performance 
-across every codebase.`
+Four months in. Two shipped projects. Several in the pipeline.
+Not slowing down.`
 
 // ContactText is rendered by the `contact` command.
-const ContactText = `--- CONTACT INFORMATION ---
+const ContactText = `--- CONTACT ---
 Email:    ultor.nyx@gmail.com
-GitHub:   https://github.com/NyxUltor
-LinkedIn: https://www.linkedin.com/in/krishna-bisht-985062373/ 
-Discord:  nyx_ultor `
+GitHub:   github.com/NyxUltor
+LinkedIn: linkedin.com/in/krishna-bisht-985062373
+Discord:  nyx_ultor`
 
-// Skills is rendered by the `skills` command.this block really needs changes
+// Skills is rendered by the `skills` command.
 var Skills = []string{
-	"Languages:  Go, Python, Shell",
-	"Platforms:  Arch Linux (i3/KDE), Docker",
-	"Frameworks: Bubble Tea, Prompt Toolkit",
+	"Design:    System architecture, logic-flow specification, UX decisions",
+	"Workflow:  Generative pipelines, multi-AI coordination, build direction",
+	"Environ:   Arch Linux (primary), KDE, multi-boot, shell scripting, Git",
+	"Tools:     Bubble Tea, Lipgloss, Python scripting, Kdenlive",
+	"Other:     Local-first data models, file I/O, input validation patterns",
 }
+
+// StatsText is rendered by the `stats` command.
+const StatsText = `--- OPERATOR STATS ---
+Lifting:
+  Deadlift     125kg  (2.27x BW)
+  Bench        60kg   (1.09x BW)
+  Bodyweight   55kg
+
+Academic:
+  CBSE Class 10          95%        2025
+  SASMO National Rank 1  Bronze     2025
+
+Languages:
+  Proficient   English, Hindi, Kumaoni
+  Learning     Russian, Japanese
+
+Art:
+  40+ works completed
+  10+ brought to portfolio-grade
+
+Misc:
+  Chess, philosophy, reading, gaming`
 
 // Projects is rendered by the `projects` command.
 // Key: slug used for sub-command lookup (e.g. `projects hercules`).
 var Projects = map[string]Project{
-	"hercules": {
-		Name:        "Hercules",
-		Description: "A tailored, high-discipline workout logging application written to optimize personal physical metrics without tracking bloat.",
-		Stack:       []string{"Android", "Custom Core Arrays"},
-	},
-	"atlantis": {
-		Name:        "Atlantis / Poseidon",
-		Description: "Conceptualized industrial AI verification framework engineered for edge-compute deployment within high-stakes offshore environments.",
-		Stack:       []string{"Go", "Local Processing Engine"},
+	"heracles": {
+		Name:        "Heracles",
+		Description: "Local-first Android fitness logger. Dual-mode input, collision-safe file indexing, progressive disclosure from casual presets to raw JSON config. Shipped.",
+		Stack:       []string{"Android", "Generative Workflow"},
 	},
 	"argus": {
 		Name:        "Argus",
-		Description: "This terminal. A Bubble Tea portfolio shell built for sovereign self-presentation — no cloud, no tracking, full local execution.",
+		Description: "This terminal. A Bubble Tea portfolio shell — local execution, no tracking, full control. Named after the hundred-eyed giant.",
 		Stack:       []string{"Go", "Bubble Tea", "Lipgloss"},
+	},
+	"contemplation": {
+		Name:        "Contemplation",
+		Description: "Web portfolio. Animations, shaders, textures. The visual counterpart to this terminal.",
+		Stack:       []string{"Web", "GLSL"},
+	},
+	"selena": {
+		Name:        "Selena",
+		Description: "Local AI assistant — closer to JARVIS than Google Assistant. Full command access, high customizability, no cloud dependency.",
+		Stack:       []string{"In Development"},
 	},
 }
