@@ -27,19 +27,20 @@ func randomEyeCooldown() time.Duration {
 
 // floatingEyeSprite returns the pre-styled lines for the easter egg eye.
 // TODO: replace placeholder with real braille eye art authored from reference images.
-func floatingEyeSprite() []string {
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ffd7"))
+// floatingEyeSpriteLines returns plain (unstyled) braille lines for the easter egg eye.
+// Style is applied by the compositor. TODO: replace with real art.
+func floatingEyeSpriteLines() []string {
 	return []string{
-		style.Render("⠀⣠⣾⣷⣄⠀"),
-		style.Render("⣼⣿⣯⣿⣿⣧"),
-		style.Render("⠙⢿⣿⣿⡿⠋"),
-		style.Render("⠀⠀⠙⠛⠋⠀⠀"),
+		"⠀⣠⣾⣷⣄⠀",
+		"⣼⣿⣯⣿⣿⣧",
+		"⠙⢿⣿⣿⡿⠋",
+		"⠀⠀⠙⠛⠋⠀⠀",
 	}
 }
 
 // floatingEyeWidth returns the display width of the sprite in cells.
 func floatingEyeWidth() int {
-	return lipgloss.Width(floatingEyeSprite()[0])
+	return lipgloss.Width(floatingEyeSpriteLines()[0])
 }
 
 func (m Model) updateFloatingEye() Model {
@@ -69,7 +70,7 @@ func (m Model) updateFloatingEye() Model {
 
 	// Despawn conditions: TTL expired or reached an edge
 	eyeW := float64(floatingEyeWidth())
-	eyeH := float64(len(floatingEyeSprite()))
+	eyeH := float64(len(floatingEyeSpriteLines()))
 	offscreen := m.FloatingEye.X < -eyeW ||
 		m.FloatingEye.X > float64(m.TerminalWidth) ||
 		m.FloatingEye.Y < -eyeH ||

@@ -36,10 +36,31 @@ func (m Model) renderStatsPanel() string {
 
 	var lines []string
 	art := applyIrisOffset(EyeArt, m.irisTarget(), m.TerminalWidth, m.TerminalHeight)
+	
+	maxLogoWidth := 0
+	for _, line := range art {
+		l := len([]rune(line))
+		if l > maxLogoWidth {
+			maxLogoWidth = l
+		}
+	}
+
 	for i := 0; i < len(art); i++ {
-		logoPart := logoStyle.Render(art[i])
+		lineRune := []rune(art[i])
+		padLogo := maxLogoWidth - len(lineRune)
+		paddedLogoLine := string(lineRune)
+		if padLogo > 0 {
+			paddedLogoLine += strings.Repeat(" ", padLogo)
+		}
+		logoPart := logoStyle.Render(paddedLogoLine)
+
 		if i < len(stats) {
-			lines = append(lines, fmt.Sprintf("  %s   %s", logoPart, stats[i]))
+			visWidthStats := lipgloss.Width(stats[i])
+			spacerWidth := m.TerminalWidth - 2 - maxLogoWidth - visWidthStats - 4
+			if spacerWidth < 3 {
+				spacerWidth = 3
+			}
+			lines = append(lines, fmt.Sprintf("  %s%s%s", logoPart, strings.Repeat(" ", spacerWidth), stats[i]))
 		} else {
 			lines = append(lines, fmt.Sprintf("  %s", logoPart))
 		}

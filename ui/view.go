@@ -12,6 +12,7 @@ import (
 )
 
 func (m Model) View() string {
+	// Takeover mode bypasses the normal layout entirely.
 	if m.ActiveTakeover != TakeoverNone {
 		return m.renderTakeover()
 	}
@@ -19,27 +20,87 @@ func (m Model) View() string {
 		return "Initializing screen buffer..."
 	}
 
-	// 1. Build the top stats panel and measure its height.
-	topSection := m.renderStatsPanel()
-	H_top := len(strings.Split(topSection, "\n"))
+	scr := newScreen(m.TerminalHeight, m.TerminalWidth)
 
-	// 2. Build the bottom input section and measure its height.
-	inputSection := m.renderInputSection()
-	H_input := len(strings.Split(inputSection, "\n"))
+	// 1. Header panel (top)
+	headerLines := m.headerLines()
+	for i, line := range headerLines {
+		m.writePlainLine(scr, i, line)
+	}
+	H_top := len(headerLines)
 
-	// 3. Calculate the scrollable history viewport height.
-	// Minimum of 1 to prevent zero-size allocations on very small terminals.
-	H_history := m.TerminalHeight - H_top - H_input - 2
+	// 2. Input section (bottom)
+	inputLines := m.inputLines()
+	H_input := len(inputLines)
+	inputStartRow := m.TerminalHeight - H_input
+	for i, line := range inputLines {
+		m.writePlainLine(scr, inputStartRow+i, line)
+	}
+
+	// 3. Divider borders
+	borderRow := H_top       // purple border under header (═══)
+	dividerRow := inputStartRow - 1 // grey divider above input (───)
+	m.writeBorderLine(scr, borderRow, '═', borderStyle1)
+	m.writeBorderLine(scr, dividerRow, '─', borderStyle2)
+
+	// 4. History viewport
+	H_history := dividerRow - borderRow - 1
 	if H_history < 1 {
 		H_history = 1
 	}
+	historyStartRow := borderRow + 1
+	m.writeHistorySection(scr, historyStartRow, H_history)
 
+	// 5. Stamp sprites on top
+	for _, sp := range m.buildSprites() {
+		scr.stampSprite(sp.Row, sp.Col, sp.Lines, sp.Style)
+	}
+
+	return scr.emit()
+}
+
+// writePlainLine parses a styled string by calling lipgloss.Width and writes
+// it into the screen. Because we can't trivially decompose a lipgloss-rendered
+// string back into (rune, style) pairs, we use a different approach:
+// write the FULL rendered string as a single-cell span at column 0 using
+// the zero style, letting emit() output it verbatim.
+//
+// For lines that don't need sprites over them (header, input, borders),
+// this is fine — sprites only appear in the history region.
+//
+// Implementation: store the entire rendered line as a "raw ANSI" span.
+// We extend Cell to support a RawANSI mode for this purpose.
+func (m Model) writePlainLine(scr Screen, row int, rendered string) {
+	if row < 0 || row >= len(scr) {
+		return
+	}
+	// Store the entire rendered string in col 0 as a raw cell.
+	// All other cells in the row remain spaces.
+	scr[row][0] = Cell{Ch: 0, Raw: rendered}
+}
+
+// writeBorderLine fills a row with a repeated border character using the given style.
+func (m Model) writeBorderLine(scr Screen, row int, ch rune, style lipgloss.Style) {
+	if row < 0 || row >= len(scr) {
+		return
+	}
+	for col := 0; col < len(scr[row]); col++ {
+		scr[row][col] = Cell{Ch: ch, Style: style}
+	}
+}
+
+// writeHistorySection renders the scrollable history panel into the screen,
+// including the scrollbar. Only rows in [startRow, startRow+height) are written.
+func (m Model) writeHistorySection(scr Screen, startRow, height int) {
 	historyLines := m.renderHistoryLines()
 
-	var historySection string
-	if len(historyLines) > H_history {
-		// --- Scrolling path: content overflows the viewport ---
-		start := len(historyLines) - H_history - m.ScrollOffset
+	var visibleLines []string
+	showScrollbar := false
+	handlePos := 0
+
+	if len(historyLines) > height {
+		showScrollbar = true
+		start := len(historyLines) - height - m.ScrollOffset
 		end := len(historyLines) - m.ScrollOffset
 		if start < 0 {
 			start = 0
@@ -47,10 +108,9 @@ func (m Model) View() string {
 		if end > len(historyLines) {
 			end = len(historyLines)
 		}
-		visibleLines := historyLines[start:end]
+		visibleLines = historyLines[start:end]
 
-		// Scrollbar ratio — guarded against zero-division (Bug 2).
-		maxScroll := len(historyLines) - H_history
+		maxScroll := len(historyLines) - height
 		ratio := 0.0
 		if maxScroll > 0 {
 			ratio = float64(m.ScrollOffset) / float64(maxScroll)
@@ -61,54 +121,37 @@ func (m Model) View() string {
 		if ratio > 1 {
 			ratio = 1
 		}
-
-		handlePos := 0
-		if H_history > 1 {
-			handlePos = (H_history - 1) - int(ratio*float64(H_history-1)+0.5)
+		if height > 1 {
+			handlePos = (height - 1) - int(ratio*float64(height-1)+0.5)
 		}
-
-		finalLines := make([]string, H_history)
-		for i := 0; i < H_history; i++ {
-			if i < len(visibleLines) {
-				finalLines[i] = visibleLines[i]
-			} else {
-				finalLines[i] = strings.Repeat(" ", m.TerminalWidth-2)
-			}
-			// Pad the line to the full width so the scrollbar column is flush.
-			// lipgloss.Width strips ANSI codes internally, giving the true cell count.
-			visWidth := lipgloss.Width(finalLines[i])
-			if padLen := (m.TerminalWidth - 2) - visWidth; padLen > 0 {
-				finalLines[i] += strings.Repeat(" ", padLen)
-			}
-			// Append scrollbar glyph.
-			if i == handlePos {
-				finalLines[i] += " " + borderStyle1.Render("█")
-			} else {
-				finalLines[i] += " " + borderStyle2.Render("│")
-			}
-		}
-		historySection = strings.Join(finalLines, "\n")
-
 	} else {
-		// --- No-scroll path: pad blank lines above to keep content pinned bottom ---
-		paddingCount := H_history - len(historyLines)
-		padding := make([]string, paddingCount)
-		allLines := append(padding, historyLines...)
-		historySection = strings.Join(allLines, "\n")
+		// Pad top with blank lines to pin content to the bottom.
+		padding := height - len(historyLines)
+		visibleLines = append(make([]string, padding), historyLines...)
 	}
 
-	var s strings.Builder
-	s.WriteString(topSection)
-	s.WriteString("\n")
-	s.WriteString(historySection)
-	s.WriteString("\n")
-	s.WriteString(borderStyle2.Render(strings.Repeat("─", m.TerminalWidth)))
-	s.WriteString("\n")
-	s.WriteString(inputSection)
-
-	baseView := s.String()
-	if len(m.Balls) > 0 || m.FloatingEye != nil {
-		return stampOverlay(baseView, m.buildSprites())
+	for i := 0; i < height; i++ {
+		row := startRow + i
+		if i < len(visibleLines) {
+			m.writePlainLine(scr, row, visibleLines[i])
+		}
+		// Scrollbar in the last two columns.
+		if showScrollbar {
+			if i == handlePos {
+				scr.set(row, m.TerminalWidth-1, Cell{Ch: '█', Style: borderStyle1})
+			} else {
+				scr.set(row, m.TerminalWidth-1, Cell{Ch: '│', Style: borderStyle2})
+			}
+		}
 	}
-	return baseView
+}
+
+// headerLines returns the rendered header panel as a slice of ANSI strings.
+func (m Model) headerLines() []string {
+	return strings.Split(m.renderStatsPanel(), "\n")
+}
+
+// inputLines returns the rendered input section as a slice of ANSI strings.
+func (m Model) inputLines() []string {
+	return strings.Split(m.renderInputSection(), "\n")
 }

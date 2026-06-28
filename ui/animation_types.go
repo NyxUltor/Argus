@@ -25,3 +25,16 @@ type FloatingEyeState struct {
 	VX, VY float64
 	TTL    time.Duration
 }
+
+// MatrixColumn tracks state for a single falling rain stream.
+type MatrixColumn struct {
+	Y      float64
+	Speed  float64
+	Length int
+	Runes  []rune
+}
+
+// Star tracks state for a single 3D star.
+type Star struct {
+	X, Y, Z float64
+}

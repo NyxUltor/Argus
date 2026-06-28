@@ -44,6 +44,10 @@ type Model struct {
 	// Input tracking for iris
 	MouseX int
 	MouseY int
+
+	// Matrix & Starfield animation states
+	MatrixColumns []MatrixColumn
+	Stars         []Star
 }
 
 // InitialModel constructs the default application state.

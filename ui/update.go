@@ -48,7 +48,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, eyeTick()
 
 	case takeoverTickMsg:
-		// TODO: update takeover-specific state per demo
+		if m.ActiveTakeover == TakeoverMatrix {
+			return m.updateMatrix()
+		}
+		if m.ActiveTakeover == TakeoverStarfield {
+			return m.updateStarfield()
+		}
 		return m, nil
 
 	// --- Mouse: scroll wheel and scrollbar click ---

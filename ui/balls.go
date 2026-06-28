@@ -85,7 +85,7 @@ func (m Model) updateBalls() Model {
 		// Easter egg eye collision
 		if m.FloatingEye != nil {
 			eyeW := float64(floatingEyeWidth())
-			eyeH := float64(len(floatingEyeSprite()))
+			eyeH := float64(len(floatingEyeSpriteLines()))
 			if b.X >= m.FloatingEye.X && b.X <= m.FloatingEye.X+eyeW &&
 				b.Y >= m.FloatingEye.Y && b.Y <= m.FloatingEye.Y+eyeH {
 				if b.X < m.FloatingEye.X+eyeW/2 {
