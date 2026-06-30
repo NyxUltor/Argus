@@ -36,7 +36,7 @@ func (m Model) renderStatsPanel() string {
 
 	var lines []string
 	art := applyIrisOffset(EyeArt, m.irisTarget(), m.TerminalWidth, m.TerminalHeight)
-	
+
 	maxLogoWidth := 0
 	for _, line := range art {
 		l := len([]rune(line))
@@ -60,9 +60,9 @@ func (m Model) renderStatsPanel() string {
 			if spacerWidth < 3 {
 				spacerWidth = 3
 			}
-			lines = append(lines, fmt.Sprintf("  %s%s%s", logoPart, strings.Repeat(" ", spacerWidth), stats[i]))
+			lines = append(lines, fmt.Sprintf("   %s%s%s", logoPart, strings.Repeat(" ", spacerWidth), stats[i]))
 		} else {
-			lines = append(lines, fmt.Sprintf("  %s", logoPart))
+			lines = append(lines, fmt.Sprintf("%s", logoPart))
 		}
 	}
 	return strings.Join(lines, "\n")

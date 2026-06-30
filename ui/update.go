@@ -151,6 +151,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
+		case "up":
+			if len(m.CmdHistory) == 0 {
+				return m, nil
+			}
+			if m.CmdHistoryIdx > 0 {
+				m.CmdHistoryIdx--
+			}
+			m.InputBuffer = m.CmdHistory[m.CmdHistoryIdx]
+			m.CursorPos = len([]rune(m.InputBuffer))
+			m.Suggestions = autocomplete.FilterCommands(m.InputBuffer)
+			return m, nil
+
+		case "down":
+			if len(m.CmdHistory) == 0 {
+				return m, nil
+			}
+			if m.CmdHistoryIdx < len(m.CmdHistory)-1 {
+				m.CmdHistoryIdx++
+				m.InputBuffer = m.CmdHistory[m.CmdHistoryIdx]
+			} else {
+				m.CmdHistoryIdx = len(m.CmdHistory)
+				m.InputBuffer = ""
+			}
+			m.CursorPos = len([]rune(m.InputBuffer))
+			m.Suggestions = autocomplete.FilterCommands(m.InputBuffer)
+			return m, nil
+
 		case "enter":
 			return m.handleEnter()
 
@@ -195,6 +222,10 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	m.CursorPos = 0
 	m.Suggestions = []string{}
 
+	if cmdClean != "" {
+		m.CmdHistory = append(m.CmdHistory, cmdText)
+		m.CmdHistoryIdx = len(m.CmdHistory)
+	}
 	if cmdClean == "" {
 		return m, nil
 	}

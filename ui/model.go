@@ -27,6 +27,8 @@ type Model struct {
 	TerminalWidth  int
 	TerminalHeight int
 	SystemUsername string
+	CmdHistory     []string
+	CmdHistoryIdx  int
 
 	History      []HistoryItem
 	ScrollOffset int

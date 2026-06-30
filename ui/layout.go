@@ -67,3 +67,14 @@ func (m Model) MaxScrollOffset() int {
 	}
 	return maxScroll
 }
+
+// logoOriginCol returns the column offset of the logo in the stats/header panel.
+func (m Model) logoOriginCol() int {
+	return 2
+}
+
+// headerHeight returns the number of rows occupied by the header panel.
+func (m Model) headerHeight() int {
+	return len(EyeArt)
+}
+

@@ -21,9 +21,12 @@ type Ball struct {
 
 // FloatingEyeState is the autonomous easter egg eye.
 type FloatingEyeState struct {
-	X, Y   float64
-	VX, VY float64
-	TTL    time.Duration
+	X, Y             float64
+	VX, VY           float64
+	TTL              time.Duration
+	DazedRemaining   time.Duration
+	Restabilizing    bool
+	RestabilizeTimer time.Duration
 }
 
 // MatrixColumn tracks state for a single falling rain stream.

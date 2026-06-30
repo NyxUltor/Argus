@@ -38,7 +38,7 @@ var (
 func GetPortfolioData() PortfolioStore {
 	storeOnce.Do(func() {
 		cachedStore = PortfolioStore{
-			Commands:     []string{"about", "projects", "skills", "contact", "stats", "fun", "clear", "exit", "quit"},
+			Commands:     []string{"about", "projects", "skills", "contact", "stats", "fun", "help", "clear", "exit", "quit"},
 			AboutText:    AboutText,
 			ContactText:  ContactText,
 			Skills:       Skills,
